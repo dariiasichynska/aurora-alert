@@ -1,0 +1,336 @@
+{
+  "name": "Aurora — flight planner",
+  "flow": [
+    {
+      "id": 2,
+      "mapper": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=68.35,67.86,68.42,67.80,66.50&longitude=18.83,20.23,27.42,24.80,25.73&hourly=cloud_cover,cloud_cover_low&forecast_days=3&timezone=auto",
+        "method": "get",
+        "shareCookies": false,
+        "parseResponse": true,
+        "allowRedirects": true,
+        "stopOnHttpError": true,
+        "requestCompressedContent": true
+      },
+      "module": "http:MakeRequest",
+      "version": 4,
+      "metadata": {
+        "restore": {
+          "expect": {
+            "method": {
+              "mode": "chose",
+              "label": "GET"
+            },
+            "headers": {
+              "mode": "chose"
+            },
+            "contentType": {
+              "label": "Empty"
+            },
+            "shareCookies": {
+              "mode": "chose"
+            },
+            "parseResponse": {
+              "mode": "chose"
+            },
+            "allowRedirects": {
+              "mode": "chose"
+            },
+            "paginationType": {
+              "label": "Empty"
+            },
+            "queryParameters": {
+              "mode": "chose"
+            },
+            "stopOnHttpError": {
+              "mode": "chose"
+            },
+            "requestCompressedContent": {
+              "mode": "chose"
+            }
+          },
+          "parameters": {
+            "tlsType": {
+              "label": "Empty"
+            },
+            "authenticationType": {
+              "label": "No authenticationUse when no credentials are required for the request."
+            }
+          }
+        },
+        "designer": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "parameters": {
+        "tlsType": "",
+        "authenticationType": "noAuth"
+      }
+    },
+    {
+      "id": 5,
+      "mapper": {
+        "url": "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json",
+        "method": "get",
+        "shareCookies": false,
+        "parseResponse": true,
+        "allowRedirects": true,
+        "stopOnHttpError": true,
+        "requestCompressedContent": true
+      },
+      "module": "http:MakeRequest",
+      "version": 4,
+      "metadata": {
+        "restore": {
+          "expect": {
+            "method": {
+              "mode": "chose",
+              "label": "GET"
+            },
+            "headers": {
+              "mode": "chose"
+            },
+            "contentType": {
+              "label": "Empty"
+            },
+            "shareCookies": {
+              "mode": "chose"
+            },
+            "parseResponse": {
+              "mode": "chose"
+            },
+            "allowRedirects": {
+              "mode": "chose"
+            },
+            "paginationType": {
+              "label": "Empty"
+            },
+            "queryParameters": {
+              "mode": "chose"
+            },
+            "stopOnHttpError": {
+              "mode": "chose"
+            },
+            "requestCompressedContent": {
+              "mode": "chose"
+            }
+          },
+          "parameters": {
+            "tlsType": {
+              "label": "Empty"
+            },
+            "authenticationType": {
+              "label": "No authenticationUse when no credentials are required for the request."
+            }
+          }
+        },
+        "designer": {
+          "x": 303,
+          "y": 173
+        }
+      },
+      "parameters": {
+        "tlsType": "",
+        "authenticationType": "noAuth"
+      },
+      "filter": {
+        "name": "Clouds low",
+        "conditions": [
+          [
+            {
+              "a": "{{2.data[1].hourly.cloud_cover_low[71]}}",
+              "b": "40",
+              "o": "number:less"
+            }
+          ],
+          [
+            {
+              "a": "{{2.data[2].hourly.cloud_cover_low[71]}}",
+              "b": "40",
+              "o": "number:less"
+            }
+          ],
+          [
+            {
+              "a": "{{2.data[3].hourly.cloud_cover_low[71]}}",
+              "b": "40",
+              "o": "number:less"
+            }
+          ],
+          [
+            {
+              "a": "{{2.data[4].hourly.cloud_cover_low[71]}}",
+              "b": "40",
+              "o": "number:less"
+            }
+          ],
+          [
+            {
+              "a": "{{2.data[5].hourly.cloud_cover_low[71]}}",
+              "b": "40",
+              "o": "number:less"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "mapper": {
+        "url": "https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json",
+        "method": "get",
+        "shareCookies": false,
+        "parseResponse": true,
+        "allowRedirects": true,
+        "stopOnHttpError": true,
+        "requestCompressedContent": true
+      },
+      "module": "http:MakeRequest",
+      "version": 4,
+      "metadata": {
+        "restore": {
+          "expect": {
+            "method": {
+              "mode": "chose",
+              "label": "GET"
+            },
+            "headers": {
+              "mode": "chose"
+            },
+            "contentType": {
+              "label": "Empty"
+            },
+            "shareCookies": {
+              "mode": "chose"
+            },
+            "parseResponse": {
+              "mode": "chose"
+            },
+            "allowRedirects": {
+              "mode": "chose"
+            },
+            "paginationType": {
+              "label": "Empty"
+            },
+            "queryParameters": {
+              "mode": "chose"
+            },
+            "stopOnHttpError": {
+              "mode": "chose"
+            },
+            "requestCompressedContent": {
+              "mode": "chose"
+            }
+          },
+          "parameters": {
+            "tlsType": {
+              "label": "Empty"
+            },
+            "authenticationType": {
+              "label": "No authenticationUse when no credentials are required for the request."
+            }
+          }
+        },
+        "designer": {
+          "x": 536,
+          "y": -38
+        }
+      },
+      "parameters": {
+        "tlsType": "",
+        "authenticationType": "noAuth"
+      },
+      "filter": {
+        "name": "Kp OK",
+        "conditions": [
+          [
+            {
+              "a": "{{parseNumber(5.data[80].kp)}}",
+              "b": "3.67",
+              "o": "number:greaterorequal"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "mapper": {
+        "text": "🌌 Аврора {{formatDate(addDays(now; 2); \"DD.MM\")}}, 22:00\n⚡ Kp: {{5.data[80].kp}}\n\nУ дужках — низькі хмари. Вони вирішують.\n\n━━━━━━━━━━━━━━\n🇸🇪 АБІСКУ / КІРУНА\nАбіску {{2.data[1].hourly.cloud_cover[71]}}% ({{2.data[1].hourly.cloud_cover_low[71]}}%) · Кіруна {{2.data[2].hourly.cloud_cover[71]}}% ({{2.data[2].hourly.cloud_cover_low[71]}}%)\n\n✈️ KRN — 90 км\nhttps://www.google.com/travel/flights?q=Flights%20to%20KRN%20from%20YOUR_AIRPORT%20on%20{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}%20through%20{{formatDate(addDays(now; 5); \"YYYY-MM-DD\")}}\n\n✈️ LLA — 340 км, +4 год\nhttps://www.google.com/travel/flights?q=Flights%20to%20LLA%20from%20YOUR_AIRPORT%20on%20{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}%20through%20{{formatDate(addDays(now; 5); \"YYYY-MM-DD\")}}\n\n━━━━━━━━━━━━━━\n🇫🇮 СААРІСЕЛЬКЕ — {{2.data[3].hourly.cloud_cover[71]}}% ({{2.data[3].hourly.cloud_cover_low[71]}}%)\n✈️ IVL\nhttps://www.google.com/travel/flights?q=Flights%20to%20IVL%20from%20YOUR_AIRPORT%20on%20{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}%20through%20{{formatDate(addDays(now; 5); \"YYYY-MM-DD\")}}\n\n━━━━━━━━━━━━━━\n🇫🇮 ЛЕВІ — {{2.data[4].hourly.cloud_cover[71]}}% ({{2.data[4].hourly.cloud_cover_low[71]}}%)\n✈️ KTT\nhttps://www.google.com/travel/flights?q=Flights%20to%20KTT%20from%20YOUR_AIRPORT%20on%20{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}%20through%20{{formatDate(addDays(now; 5); \"YYYY-MM-DD\")}}\n\n━━━━━━━━━━━━━━\n🇫🇮 РОВАНІЄМІ — {{2.data[5].hourly.cloud_cover[71]}}% ({{2.data[5].hourly.cloud_cover_low[71]}}%)\n✈️ RVN\nhttps://www.google.com/travel/flights?q=Flights%20to%20RVN%20from%20YOUR_AIRPORT%20on%20{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}%20through%20{{formatDate(addDays(now; 5); \"YYYY-MM-DD\")}}\n\n🌞💨 Вітер: {{6.data[1].proton_speed}} км/с\n{{if(parseNumber(6.data[1].proton_speed) > 580; \"⚡ Схоже на корональну діру — повтор очікується ~\" + formatDate(addDays(now; 27); \"DD.MM\"); )}}\n",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "parseMode": "",
+        "replyMarkup": "",
+        "messageThreadId": "",
+        "replyToMessageId": "",
+        "replyMarkupAssembleType": "reply_markup_enter"
+      },
+      "module": "telegram:SendReplyMessage",
+      "version": 1,
+      "metadata": {
+        "restore": {
+          "expect": {
+            "parseMode": {
+              "label": "Empty"
+            },
+            "disableNotification": {
+              "mode": "chose"
+            },
+            "replyMarkupAssembleType": {
+              "label": "Enter the Reply Markup"
+            }
+          }
+        },
+        "designer": {
+          "x": 866,
+          "y": -36
+        }
+      },
+      "parameters": {}
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "designer": {
+      "orphans": []
+    },
+    "scenario": {
+      "dlq": false,
+      "slots": null,
+      "dataloss": false,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "roundtrips": 1,
+      "sequential": false,
+      "confidential": false,
+      "freshVariables": false,
+      "autoCommitTriggerLast": true
+    }
+  },
+  "scheduling": {
+    "type": "indefinitely",
+    "interval": 900,
+    "restrict": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          0
+        ],
+        "time": [
+          "21:00",
+          "21:01"
+        ]
+      }
+    ]
+  },
+  "interface": {
+    "input": [],
+    "output": []
+  }
+}

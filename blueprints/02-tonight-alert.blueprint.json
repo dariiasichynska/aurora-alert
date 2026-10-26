@@ -1,0 +1,261 @@
+{
+  "name": "Aurora — go outside now",
+  "flow": [
+    {
+      "id": 2,
+      "mapper": {
+        "url": "https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json",
+        "method": "get",
+        "shareCookies": false,
+        "parseResponse": true,
+        "allowRedirects": true,
+        "stopOnHttpError": true,
+        "requestCompressedContent": true
+      },
+      "module": "http:MakeRequest",
+      "version": 4,
+      "metadata": {
+        "restore": {
+          "expect": {
+            "method": {
+              "mode": "chose",
+              "label": "GET"
+            },
+            "headers": {
+              "mode": "chose"
+            },
+            "contentType": {
+              "label": "Empty"
+            },
+            "shareCookies": {
+              "mode": "chose"
+            },
+            "parseResponse": {
+              "mode": "chose"
+            },
+            "allowRedirects": {
+              "mode": "chose"
+            },
+            "paginationType": {
+              "label": "Empty"
+            },
+            "queryParameters": {
+              "mode": "chose"
+            },
+            "stopOnHttpError": {
+              "mode": "chose"
+            },
+            "requestCompressedContent": {
+              "mode": "chose"
+            }
+          },
+          "parameters": {
+            "tlsType": {
+              "label": "Empty"
+            },
+            "authenticationType": {
+              "label": "No authenticationUse when no credentials are required for the request."
+            }
+          }
+        },
+        "designer": {
+          "x": -368,
+          "y": 4
+        }
+      },
+      "parameters": {
+        "tlsType": "",
+        "authenticationType": "noAuth"
+      }
+    },
+    {
+      "id": 7,
+      "mapper": {
+        "url": "https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json",
+        "method": "get",
+        "shareCookies": false,
+        "parseResponse": true,
+        "allowRedirects": true,
+        "stopOnHttpError": true,
+        "requestCompressedContent": true
+      },
+      "module": "http:MakeRequest",
+      "version": 4,
+      "metadata": {
+        "restore": {
+          "expect": {
+            "method": {
+              "mode": "chose",
+              "label": "GET"
+            },
+            "headers": {
+              "mode": "chose"
+            },
+            "contentType": {
+              "label": "Empty"
+            },
+            "shareCookies": {
+              "mode": "chose"
+            },
+            "parseResponse": {
+              "mode": "chose"
+            },
+            "allowRedirects": {
+              "mode": "chose"
+            },
+            "paginationType": {
+              "label": "Empty"
+            },
+            "queryParameters": {
+              "mode": "chose"
+            },
+            "stopOnHttpError": {
+              "mode": "chose"
+            },
+            "requestCompressedContent": {
+              "mode": "chose"
+            }
+          },
+          "parameters": {
+            "tlsType": {
+              "label": "Empty"
+            },
+            "authenticationType": {
+              "label": "No authenticationUse when no credentials are required for the request."
+            }
+          }
+        },
+        "designer": {
+          "x": -46,
+          "y": -3
+        }
+      },
+      "parameters": {
+        "tlsType": "",
+        "authenticationType": "noAuth"
+      },
+      "filter": {
+        "name": "Bz negative",
+        "conditions": [
+          [
+            {
+              "a": "{{parseNumber(2.data[1].bz_gsm)}}",
+              "b": "-3",
+              "o": "number:less"
+            },
+            {
+              "a": "{{parseNumber(2.data[1].bz_gsm)}}",
+              "b": "-100",
+              "o": "number:greater"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "mapper": {
+        "text": "🚨🌌 ПОЛЯРНЕ СЯЙВО — ВИХОДЬ!\n\n⏱ Через 30-60 хвилин має початись.\nОдягайся тепло, це не на п'ять хвилин.\n\n🧭 Дивись НА ПІВНІЧ\nПодалі від ліхтарів. Спершу побачиш просто сіру смугу над горизонтом — це воно і є. Зелений колір з'являється, коли сильно, або на фото.\n\n━━━━━━━━━━━━━━\n\n🚪 Двері до атмосфери: {{if(parseNumber(2.data[1].bz_gsm) < -10; \"ВІДЧИНЕНІ НАВСТІЖ\"; \"відчинені\")}}\n({{2.data[1].bz_gsm}} nT — що більший мінус, то краще)\n\n💨 Сонячний вітер: {{if(parseNumber(7.data[1].proton_speed) > 600; \"дуже швидкий\"; if(parseNumber(7.data[1].proton_speed) > 500; \"швидкий\"; \"нормальний\"))}}\n({{7.data[1].proton_speed}} км/с)\n\n🔋 Запас сили: {{if(parseNumber(2.data[1].bt) > 15; \"великий — може стати ще сильніше, перевір ще раз за пів години\"; if(parseNumber(2.data[1].bt) > 8; \"середній\"; \"малий — сильніше вже не стане\"))}}\n({{2.data[1].bt}} nT)\n\n━━━━━━━━━━━━━━\n\n📷 Фото: витримка 5-10 сек, ISO 1600, фокус вручну на ∞, штатив обов'язково.",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "parseMode": "",
+        "replyMarkup": "",
+        "messageThreadId": "",
+        "replyToMessageId": "",
+        "replyMarkupAssembleType": "reply_markup_enter"
+      },
+      "module": "telegram:SendReplyMessage",
+      "version": 1,
+      "metadata": {
+        "restore": {
+          "expect": {
+            "parseMode": {
+              "label": "Empty"
+            },
+            "disableNotification": {
+              "mode": "chose"
+            },
+            "replyMarkupAssembleType": {
+              "label": "Enter the Reply Markup"
+            }
+          }
+        },
+        "designer": {
+          "x": 263,
+          "y": -7
+        }
+      },
+      "parameters": {},
+      "filter": {
+        "name": "Speed OK",
+        "conditions": [
+          [
+            {
+              "a": "{{parseNumber(7.data[1].proton_speed)}}",
+              "b": "400",
+              "o": "number:greater"
+            }
+          ]
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "designer": {
+      "orphans": []
+    },
+    "scenario": {
+      "dlq": false,
+      "slots": null,
+      "dataloss": false,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "roundtrips": 1,
+      "sequential": false,
+      "confidential": false,
+      "freshVariables": false,
+      "autoCommitTriggerLast": true
+    }
+  },
+  "scheduling": {
+    "type": "indefinitely",
+    "interval": 900,
+    "restrict": [
+      {
+        "days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "time": [
+          "20:00",
+          "23:59"
+        ]
+      },
+      {
+        "days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "time": [
+          "00:00",
+          "06:00"
+        ]
+      }
+    ]
+  },
+  "interface": {
+    "input": [],
+    "output": []
+  }
+}
