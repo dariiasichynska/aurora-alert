@@ -1,0 +1,212 @@
+{
+  "name": "Soll ich zu Aurora fliegen?",
+  "flow": [
+    {
+      "id": 2,
+      "module": "http:MakeRequest",
+      "version": 4,
+      "parameters": {
+        "tlsType": "",
+        "authenticationType": "noAuth"
+      },
+      "mapper": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=68.35,67.86,68.42,67.80,66.50&longitude=18.83,20.23,27.42,24.80,25.73&hourly=cloud_cover,cloud_cover_low&forecast_days=3&timezone=auto",
+        "method": "get",
+        "shareCookies": false,
+        "parseResponse": true,
+        "allowRedirects": true,
+        "stopOnHttpError": true,
+        "requestCompressedContent": true
+      },
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": 5,
+      "module": "http:MakeRequest",
+      "version": 4,
+      "filter": {
+        "name": "Clouds low",
+        "conditions": [
+          [
+            {
+              "a": "{{2.data[1].hourly.cloud_cover_low[71]}}",
+              "b": "40",
+              "o": "number:less"
+            }
+          ],
+          [
+            {
+              "a": "{{2.data[2].hourly.cloud_cover_low[71]}}",
+              "b": "40",
+              "o": "number:less"
+            }
+          ],
+          [
+            {
+              "a": "{{2.data[3].hourly.cloud_cover_low[71]}}",
+              "b": "40",
+              "o": "number:less"
+            }
+          ],
+          [
+            {
+              "a": "{{2.data[4].hourly.cloud_cover_low[71]}}",
+              "b": "40",
+              "o": "number:less"
+            }
+          ],
+          [
+            {
+              "a": "{{2.data[5].hourly.cloud_cover_low[71]}}",
+              "b": "40",
+              "o": "number:less"
+            }
+          ]
+        ]
+      },
+      "parameters": {
+        "tlsType": "",
+        "authenticationType": "noAuth"
+      },
+      "mapper": {
+        "url": "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json",
+        "method": "get",
+        "shareCookies": false,
+        "parseResponse": true,
+        "allowRedirects": true,
+        "stopOnHttpError": true,
+        "requestCompressedContent": true
+      },
+      "metadata": {
+        "designer": {
+          "x": 303,
+          "y": 173
+        }
+      }
+    },
+    {
+      "id": 6,
+      "module": "http:MakeRequest",
+      "version": 4,
+      "filter": {
+        "name": "Kp OK",
+        "conditions": [
+          [
+            {
+              "a": "{{parseNumber(5.data[80].kp)}}",
+              "b": "3.67",
+              "o": "number:greaterorequal"
+            }
+          ]
+        ]
+      },
+      "parameters": {
+        "tlsType": "",
+        "authenticationType": "noAuth"
+      },
+      "mapper": {
+        "url": "https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json",
+        "method": "get",
+        "shareCookies": false,
+        "parseResponse": true,
+        "allowRedirects": true,
+        "stopOnHttpError": true,
+        "requestCompressedContent": true
+      },
+      "metadata": {
+        "designer": {
+          "x": 536,
+          "y": -38
+        }
+      }
+    },
+    {
+      "id": 4,
+      "module": "telegram:SendReplyMessage",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": null
+      },
+      "mapper": {
+        "chatId": "YOUR_PRIVATE_CHAT_ID",
+        "text": "🌌 Aurora {{formatDate(addDays(now; 2); \"DD.MM\")}}, 22:00\n⚡ Kp: {{5.data[80].kp}}\n\nIn brackets: low clouds. They decide.\n\n━━━━━━━━━━━━━━\n🇸🇪 ABISKO / KIRUNA\nAbisko {{2.data[1].hourly.cloud_cover[71]}}% ({{2.data[1].hourly.cloud_cover_low[71]}}%) · Kiruna {{2.data[2].hourly.cloud_cover[71]}}% ({{2.data[2].hourly.cloud_cover_low[71]}}%)\n\n✈️ KRN — 90 km\nhttps://www.google.com/travel/flights?q=Flights%20to%20KRN%20from%20BER%20on%20{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}%20through%20{{formatDate(addDays(now; 5); \"YYYY-MM-DD\")}}\n\n✈️ LLA — 340 km, +4 h\nhttps://www.google.com/travel/flights?q=Flights%20to%20LLA%20from%20BER%20on%20{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}%20through%20{{formatDate(addDays(now; 5); \"YYYY-MM-DD\")}}\n\n━━━━━━━━━━━━━━\n🇫🇮 SAARISELKÄ — {{2.data[3].hourly.cloud_cover[71]}}% ({{2.data[3].hourly.cloud_cover_low[71]}}%)\n✈️ IVL\nhttps://www.google.com/travel/flights?q=Flights%20to%20IVL%20from%20BER%20on%20{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}%20through%20{{formatDate(addDays(now; 5); \"YYYY-MM-DD\")}}\n\n━━━━━━━━━━━━━━\n🇫🇮 LEVI — {{2.data[4].hourly.cloud_cover[71]}}% ({{2.data[4].hourly.cloud_cover_low[71]}}%)\n✈️ KTT\nhttps://www.google.com/travel/flights?q=Flights%20to%20KTT%20from%20BER%20on%20{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}%20through%20{{formatDate(addDays(now; 5); \"YYYY-MM-DD\")}}\n\n━━━━━━━━━━━━━━\n🇫🇮 ROVANIEMI — {{2.data[5].hourly.cloud_cover[71]}}% ({{2.data[5].hourly.cloud_cover_low[71]}}%)\n✈️ RVN\nhttps://www.google.com/travel/flights?q=Flights%20to%20RVN%20from%20BER%20on%20{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}%20through%20{{formatDate(addDays(now; 5); \"YYYY-MM-DD\")}}\n\n🌞💨 Solar wind: {{6.data[1].proton_speed}} km/s\n{{if(parseNumber(6.data[1].proton_speed) > 580; \"⚡ Looks like a coronal hole — expect a repeat around \" + formatDate(addDays(now; 27); \"DD.MM\"); )}}\n",
+        "parseMode": "",
+        "replyMarkup": "",
+        "messageThreadId": "",
+        "replyToMessageId": "",
+        "replyMarkupAssembleType": "reply_markup_enter"
+      },
+      "metadata": {
+        "designer": {
+          "x": 866,
+          "y": -36
+        }
+      }
+    },
+    {
+      "id": 7,
+      "module": "telegram:SendReplyMessage",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": null
+      },
+      "mapper": {
+        "chatId": "@YOUR_PUBLIC_CHANNEL",
+        "text": "(same template as module 4)",
+        "parseMode": "",
+        "replyMarkup": "",
+        "messageThreadId": "",
+        "replyToMessageId": "",
+        "replyMarkupAssembleType": "reply_markup_enter"
+      },
+      "metadata": {
+        "designer": {
+          "x": 1166,
+          "y": -36
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "dlq": false,
+      "slots": null,
+      "dataloss": false,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "roundtrips": 1,
+      "sequential": false,
+      "confidential": false,
+      "freshVariables": false,
+      "autoCommitTriggerLast": true
+    }
+  },
+  "scheduling": {
+    "type": "indefinitely",
+    "interval": 900,
+    "restrict": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          0
+        ],
+        "time": [
+          "21:00",
+          "21:01"
+        ]
+      }
+    ]
+  }
+}

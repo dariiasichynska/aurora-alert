@@ -1,165 +1,161 @@
-# Aurora Alert — two Make.com scenarios
+<p align="center">
+  <img src="assets/banner.svg" alt="Aurora Alert — space-weather and cloud data, no-code decision logic, Telegram" width="100%">
+</p>
 
-Event-driven aurora monitoring built on [Make.com](https://make.com). Two scenarios answer two different questions, pull from four public API endpoints, and push plain-language alerts to Telegram: to a private group and to a public channel anyone can join.
+<p align="center">
+  <img alt="Make.com" src="https://img.shields.io/badge/Make.com-no--code-6d00cc?logo=make&logoColor=white">
+  <img alt="Open-Meteo" src="https://img.shields.io/badge/Open--Meteo-cloud%20cover-1f6feb">
+  <img alt="NOAA SWPC" src="https://img.shields.io/badge/NOAA%20SWPC-space%20weather-0b3d91">
+  <img alt="Telegram" src="https://img.shields.io/badge/Telegram-Bot%20API-26A5E4?logo=telegram&logoColor=white">
+  <img alt="Runs" src="https://img.shields.io/badge/evening%20runs-32%2F32%20successful-2ea043">
+  <img alt="Cost" src="https://img.shields.io/badge/cost-%E2%82%AC0%20(free%20tier)-2ea043">
+</p>
 
-The engineering point is cost: the system runs on Make's free tier (1,000 operations/month) and uses about **40** of them in normal operation. A naive implementation of the same logic would burn over **8,000**.
+**Two Make.com scenarios answer two different questions:**
 
----
+| | Question | When it runs | Looks at | Output |
+|---|---|---|---|---|
+| ① | **Soll ich zu Aurora fliegen?** Is it worth booking a trip to Lapland? | daily, 21:00 | cloud forecast for 5 sites (2 days ahead) + Kp forecast + solar wind | Telegram alert with cloud cover per site and **Google Flights deep links** BER → KRN / LLA / IVL / KTT / RVN |
+| ② | **Soll ich raus für Aurora?** Should I go outside right now? | every 30 min, 20:00–06:00 | real-time solar wind measured at L1 (≈ 1.5 million km upstream) | "Go outside" alert with 30–60 min lead time, plain-language explanation and camera settings |
 
-## The two questions
+No servers, no code to host: three public APIs, a handful of filters, and Telegram.
 
-| | Scenario 1 — flight planner | Scenario 2 — tonight alert |
-| --- | --- | --- |
-| Question | Is it worth booking a flight? | Is it worth stepping outside right now? |
-| Forecast horizon | 2 days | ~1 hour |
-| Trigger | daily, 21:00 | every 30 min, 20:00–06:00 only |
-| Signal | cloud cover at 5 sites + Kp forecast | IMF Bz + solar wind speed |
-| Output | Telegram message with pre-dated flight-search links | Telegram alert with plain-language conditions |
-| Sent to | private group + public channel | private group + public channel |
-| Normally | always on | enabled on demand |
-
-They cannot be one scenario: their forecast horizons differ by a factor of ~50.
+<p align="center"><a href="assets/aurora-walkthrough.mp4"><img src="assets/aurora-walkthrough-cover.jpg" alt="Watch the 64-second walkthrough recorded in Make.com" width="100%"></a><br><sub>▶ <a href="assets/aurora-walkthrough.mp4"><b>Watch the 64-second walkthrough</b></a>, filmed on the real Make.com scenarios: canvas, filters, a real alert run and a real quiet run.</sub></p>
 
 ---
 
 ## Architecture
 
+<p align="center"><img src="assets/architecture.svg" alt="Data flow of both scenarios" width="100%"></p>
+
+<details>
+<summary><b>Same flows as Mermaid (click to expand)</b></summary>
+
 ```mermaid
 flowchart LR
-  subgraph S1["Scenario 1 — flight planner (daily 21:00)"]
-    A1[HTTP: Open-Meteo<br/>5 locations, 1 request] --> F1{{"Clouds low &lt; 40%<br/>at any site"}}
-    F1 --> A2[HTTP: NOAA<br/>Kp forecast] --> F2{{"Kp ≥ 3.67"}}
-    F2 --> A3[HTTP: NOAA<br/>solar wind speed] --> A4[Telegram<br/>group] --> A5[Telegram<br/>channel]
-  end
-  subgraph S2["Scenario 2 — tonight alert (30 min, night window)"]
-    B1[HTTP: NOAA<br/>magnetic field] --> G1{{"Bz &lt; −3<br/>and Bz &gt; −100"}}
-    G1 --> B2[HTTP: NOAA<br/>solar wind speed] --> G2{{"speed &gt; 450 km/s"}}
-    G2 --> B3[Telegram<br/>group] --> B4[Telegram<br/>channel]
-  end
+    S1([⏰ Daily 21:00]) --> OM[☁️ Open-Meteo<br/>cloud_cover, cloud_cover_low<br/>5 sites · 72 h]
+    OM -->|"low clouds < 40 %<br/>at ANY site (OR)"| KP[🌍 NOAA SWPC<br/>Kp 3-day forecast]
+    OM -.->|all cloudy| X1((stop · 1 op))
+    KP -->|"Kp ≥ 3.67"| SW[💨 NOAA SWPC<br/>solar-wind speed]
+    KP -.->|too quiet| X2((stop · 2 ops))
+    SW --> T1[✈️ Telegram<br/>private chat]
+    T1 --> T2[📣 Telegram<br/>public channel]
 ```
 
-Both follow the same shape: fetch, filter, fetch again only if needed, notify.
+```mermaid
+flowchart LR
+    S2([⏰ Every 30 min<br/>20:00–06:00]) --> MAG[🧲 NOAA SWPC<br/>IMF Bz, Bt]
+    MAG -->|"−100 < Bz < −3 nT"| SPD[💨 NOAA SWPC<br/>proton speed]
+    MAG -.->|Bz north / sensor glitch| Y1((stop · 1 op))
+    SPD -->|"> 450 km/s"| A1[🚨 Telegram<br/>private chat]
+    SPD -.->|too slow| Y2((stop · 2 ops))
+    A1 --> A2[📣 Telegram<br/>public channel]
+```
+</details>
+
+## Inside Make
+
+| ① Trip planner: scenario canvas + 30-day ops chart | ② Live alarm: canvas + ops chart (peak during the 21–22 Oct storm) |
+|---|---|
+| <img src="assets/screenshots/01-flight-scenario-diagram.jpg" alt="Make canvas of the trip planner"> | <img src="assets/screenshots/03-live-scenario-diagram.jpg" alt="Make canvas of the live alarm"> |
+| <img src="assets/screenshots/02-flight-scenario-history.jpg" alt="Execution history of the trip planner: 2 ops on quiet nights, 5 ops on alert nights"> | <img src="assets/screenshots/04-live-scenario-history.jpg" alt="Execution history of the live alarm"> |
+
+The operations column shows the filter design at work: **2 operations** on quiet nights, **5** when the alert goes out to both Telegram targets.
+
+## What the alerts look like
+
+<p align="center"><img src="assets/telegram-messages.svg" alt="The two Telegram alert layouts" width="100%"></p>
 
 ---
 
-## Why it costs ~40 operations instead of 8,700
+## Live run statistics
 
-Make bills **per executed module**, not per scenario run. Filters are free and stop everything to their right.
+Pulled from the Make execution log on **10 Nov 2026** (via the Make MCP API). Raw data lives in [`data/`](data/); every chart is rebuilt by [`scripts/make_charts.py`](scripts/make_charts.py).
 
-That single fact drives the whole design:
+### ① Trip planner: 32 evenings, 9 trip alerts
 
-1. **Every expensive call sits behind a free check.** On a typical night the chain stops after module 1 — one operation, not three.
-2. **Module order is not arbitrary.** The first module always runs and always costs one operation, so the first slot goes to the fetch that most often says *no* and returns the smallest payload.
-3. **Time windows beat conditional logic.** A run outside the schedule window costs nothing at all. 96 runs/day become 20 runs/night.
-4. **Batch what the API will batch.** Open-Meteo accepts five coordinate pairs in one request and returns an array. Five locations, one operation.
-5. **One message, any number of readers.** Public alerts go to a Telegram channel, not to a list of subscribers. Sending costs one operation whether the channel has 3 readers or 3,000.
+<p align="center"><img src="assets/flight-timeline.svg" alt="Stage reached by each evening run, 9 Oct – 9 Nov 2026" width="100%"></p>
+<p align="center"><img src="assets/flight-funnel.svg" alt="Funnel: 32 evenings, 27 with a clear site, 9 alerts" width="100%"></p>
 
-| Variant | Operations/month |
-| --- | --- |
-| Every 15 min, round the clock, all modules | ~8,700 |
-| This architecture, normal operation | ~40 |
-| This architecture, including one week of travel | ~180 |
+| Metric | Value |
+|---|---|
+| Scheduled evening runs (9 Oct – 9 Nov) | **32**, all successful |
+| Stopped by clouds at all 5 sites | 5 (16 %) |
+| A clear site, but Kp forecast < 3.67 | 18 (56 %) |
+| **Trip alert sent** | **9 (28 %)**, in clusters: 9–10, 17–18 and 28–29 Oct, then 4, 6 and 7 Nov |
+| Operations used | 80, so **2.5 ops per evening ≈ 75 ops / month** |
+| Median run time | 0.9 s (max 3.3 s) |
+| Errors | 0 scheduled. 1 manual test run hit `503 Service Unavailable` from an API |
 
-### No iterators — on purpose
+### ② Go-outside alarm: two storm nights at 15-minute resolution
 
-The NOAA Kp file holds ~1,400 entries. An Iterator would split it into 1,400 bundles and every downstream module would run 1,400 times. One execution would consume a month and a half of free-tier budget.
+<p align="center"><img src="assets/live-heatstrip.svg" alt="15-minute heat strip of the live alarm, 21–23 Oct 2026" width="100%"></p>
 
-Instead the needed element is addressed directly:
+On **21–22 October** the solar-wind conditions stayed "open" for hours, so the alarm fired **21 times in two evenings**. Each 15-minute run re-sent the same alert. This is the strongest argument for the cooldown in the [roadmap](#roadmap).
+
+| Metric (94 runs, nights of 20 – 22 Oct) | Value |
+|---|---|
+| Bz not south enough | 70 |
+| Bz south, but wind ≤ 450 km/s | 3 |
+| **Alert sent** | **21** |
+| Lifetime totals (Make counter) | 486 runs · 564 ops · 0 errors |
+
+---
+
+## The physics behind the filters
+
+<details>
+<summary><b>Why these three numbers? (click to expand)</b></summary>
+
+**Kp index (trip planner).** Kp is a planetary 0–9 index of geomagnetic disturbance, built from 3-hour magnetometer readings worldwide. The higher it is, the further south the auroral oval spreads. NOAA SWPC publishes a 3-day forecast in 3-hour slots. The scenario reads the slot that matches the target night. Lapland (~68° N) sits under the oval even at low Kp, so **Kp ≥ 3.67 ("4−")** is a deliberately strict bar: it is only worth booking a flight for a *strong* show.
+
+**Low clouds decide (trip planner).** Total cloud cover is misleading for aurora: thin high cirrus barely matters, while low stratus blocks everything. That is why the filter checks `cloud_cover_low` and the message shows total cover with low cover in brackets. The five sites act as an **OR**: one clear site is enough, because you can drive there.
+
+**Bz and solar-wind speed (live alarm).** Spacecraft at the L1 point measure the solar wind about 1.5 million km before it reaches Earth. That gives **roughly 30–60 minutes of warning**.
+- **Bz < 0** (southward interplanetary magnetic field) couples with Earth's field and "opens the door". The more negative, the better. The lower bound −100 nT rejects fill values and sensor glitches.
+- **Speed > 450 km/s** means more energy is delivered. The message grades it as normal, fast (> 500) or very fast (> 600).
+- **Bt** (total field strength) is shown as "power reserve": a high Bt means Bz can swing even more negative.
+
+**27-day recurrence.** If the wind is faster than 580 km/s, the trip alert flags a likely **coronal hole**. Coronal holes rotate with the Sun (≈ 27 days), so the alert predicts a repeat date with `addDays(now; 27)`.
+</details>
+
+## Engineering notes
+
+- **Filter-first ordering = cost control.** In Make, every executed module costs an operation. Putting the cheapest, most-often-failing check first (clouds, or Bz) means **72 % of trip-planner evenings stop after 1–2 operations**. Telegram only runs on the 28 % of evenings that matter.
+- **OR filter across sites.** The "Clouds low" filter has five OR-groups, one per site. Any single clear site passes.
+- **Index arithmetic.** Open-Meteo returns 72 hourly values (3 days × 24 h, local time zone). Make arrays are **1-based**, so `hourly.cloud_cover_low[71]` is 22:00 local on day 3. That matches the "+2 days, 22:00" in the message.
+- **Defensive parsing.** NOAA values can arrive as strings, so every comparison goes through `parseNumber()`.
+- **Kp slot without a date lookup.** The NOAA forecast file holds 81 three-hour slots: 7 days back, 3 days ahead, starting at 00:00 UTC. At run time (20:00 UTC) slot `data[80]` is **21:00 UTC two days ahead = 22:00 CET**, the same night the cloud check targets (verified against the live file on 10 Nov 2026).
+- **Inline decision logic.** The plain-language grades ("doors wide open", "very fast wind", "big power reserve") are nested `if()` expressions inside the Telegram template. No extra modules, no extra operations.
+- **Deep links instead of a flight API.** Google Flights `?q=` URLs with computed dates (`addDays(now; 2)` to `addDays(now; 5)`) open a ready-made search for each airport. That costs nothing and needs no API key.
+- **Free-tier budget.** The trip planner uses ~75 ops/month. The live alarm uses at least 1 op per run: 21 runs/night × 30 ≈ **630+ ops/month** at a 30-minute interval (twice that at 15 min). On 3 Nov the interval went from 15 to 30 min, which halves that.
+
+## Roadmap
+
+- [ ] **Cooldown / de-duplication** for the live alarm. Store the last alert time in a Make **Data Store** and skip new alerts for 90 min (the 21-alerts-in-2-nights problem above).
+- [ ] **Location-aware thresholds.** Berlin (~52.5° N) typically needs Kp 6–7 for a visible aurora. Bz < −3 nT at 450 km/s is a good Lapland trigger but optimistic for Berlin. Option: add a Kp-nowcast or OVATION check for mid-latitudes.
+- [ ] **Local cloud check** for the live alarm (Open-Meteo for the observer's position) before sending "go outside".
+- [ ] **Error route** on the HTTP modules (`Resume`/`Ignore` + a quiet Telegram note) for occasional NOAA `503`s.
+- [ ] Pick the Kp slot by `time_tag` (e.g. `map()` + `get()`) instead of the fixed position `[80]`, so a change in NOAA's file layout cannot shift the night silently.
+- [ ] One shared message template via **Set variable**, instead of duplicating the text in both Telegram modules.
+
+## Repository layout
 
 ```
-{{parseNumber(5.data[80].kp)}}
+assets/       banner, architecture diagram, charts, message layouts (SVG), walkthrough video (MP4 + cover), screenshots/ from Make
+blueprints/   sanitized Make blueprints, importable via Scenario → ⋯ → Import Blueprint
+data/         execution logs exported from Make (CSV)
+scripts/      build_live_csv.py · make_charts.py · make_diagram.py · make_telegram_mock.py · make_video.py · make_video_v2.py
 ```
 
----
+### Run it yourself
 
-## Public Telegram channel
+1. In Make: **Create a new scenario → ⋯ → Import Blueprint** → pick a file from `blueprints/`.
+2. Create a Telegram bot with [@BotFather](https://t.me/BotFather), add the Telegram connection, and replace `YOUR_PRIVATE_CHAT_ID` and `@YOUR_PUBLIC_CHANNEL`. To fly from somewhere other than Berlin, change `BER` in the flight links to your airport's IATA code.
+3. Change the coordinates in the Open-Meteo URL to your own sites, then set the schedule.
 
-Every alert goes to two places: my private Telegram group, as before, and a public channel that anyone can join. The channel link is on [dariiasichynska.github.io](https://dariiasichynska.github.io/#projekte).
-
-The second Telegram module sits behind the same filters as the first, so it only runs when an alert is actually sent: one extra operation per alert, not per run. Alerts are rare, so this adds a few operations a month.
-
-Why a channel and not a bot with a subscriber list:
-
-- **Cost stays flat.** A bot that messages each subscriber individually needs a loop: every new subscriber adds one operation per alert, plus a second scenario to register `/start` commands. A channel needs neither.
-- **No personal data to store.** The scenarios never see who reads the channel. No chat IDs, no names, no data store.
-- **Readers stay private.** Unlike a group, channel members cannot see each other or post. The private group stays private.
-
-Scenario 1 runs every evening, so subscribers get a message whenever a Lapland night two days ahead looks promising. Scenario 2 runs only when I switch it on, so its "go outside" alerts are occasional.
+Rebuild the visuals: `pip install matplotlib && python scripts/make_charts.py && python scripts/make_diagram.py && python scripts/make_telegram_mock.py`
 
 ---
 
-## Changelog
-
-**2026-11** — tuned for the free-tier budget, published to a public channel
-
-- Scenario 2 polls every **30 minutes** instead of 15. Half the runs per night: a week of travel now costs ~180 operations instead of ~320. Trade-off: an alert can arrive up to 30 minutes after the field turns south instead of 15.
-- Scenario 2 solar wind threshold raised from **400 to 450 km/s**. Fewer alerts on marginal nights, fewer operations.
-- Both scenarios now also post to a public Telegram channel, in addition to the private group (see above).
-
-**2026-10** — first public version
-
----
-
-## Data sources
-
-All public, no authentication, no API keys.
-
-| Source | Endpoint | Used for |
-| --- | --- | --- |
-| Open-Meteo | `/v1/forecast` | `cloud_cover`, `cloud_cover_low` for 5 Lapland sites |
-| NOAA SWPC | `/products/noaa-planetary-k-index-forecast.json` | 3-day Kp forecast |
-| NOAA SWPC | `/products/summary/solar-wind-mag-field.json` | `bz_gsm`, `bt` (IMF, from DSCOVR) |
-| NOAA SWPC | `/products/summary/solar-wind-speed.json` | `proton_speed` |
-
-Monitored locations: Abisko, Kiruna (SE), Saariselkä, Levi, Rovaniemi (FI).
-
----
-
-## Setup
-
-1. **Import** a blueprint: Make → *Create a new scenario* → ⋯ menu → *Import Blueprint* → pick a file from `blueprints/`.
-2. **Telegram connection.** Create a bot via [@BotFather](https://t.me/botfather), then open the Telegram module and add your own connection. The blueprints ship with no connection attached.
-3. **Chat IDs.** Each scenario ends with two Telegram modules.
-   - **Group or private chat** — replace `YOUR_TELEGRAM_CHAT_ID` in the first one. Add the bot, post a message, and read the id from `https://api.telegram.org/bot<TOKEN>/getUpdates` — group ids are negative.
-   - **Public channel** — replace `@YOUR_PUBLIC_CHANNEL` in the second one with `@your_channel_name`, and add the bot to the channel as an administrator with permission to post. Don't need a channel? Delete the second module.
-4. **Departure airport.** Replace `YOUR_AIRPORT` in the Telegram message of scenario 1 with your own IATA code (5 occurrences, inside the flight-search URLs).
-5. **Locations.** Edit the `latitude` / `longitude` lists in the Open-Meteo URL of scenario 1. Order matters: `data[1]` is the first coordinate pair, `data[2]` the second, and so on. Keep the filter conditions and message mappings in sync. The destination codes (KRN, LLA, IVL, KTT, RVN) sit in the message text and must match.
-6. **Thresholds.** See `docs/architecture.md` before changing them — several values look wrong but are not.
-
-Notification texts are in Ukrainian. Scenario 2 renders roughly as:
-
-```
-🚨🌌 AURORA — GO OUTSIDE!
-⏱ Starting in 30–60 minutes.
-
-🚪 Door to the atmosphere: WIDE OPEN
-(-12.4 nT — the deeper the minus, the better)
-💨 Solar wind: fast
-(521 km/s)
-🔋 Reserve: medium
-(11 nT)
-```
-
-The wording is produced by nested `if()` cascades that translate raw instrument readings into something readable at 2 a.m.
-
----
-
-## What was removed before publishing
-
-The blueprints in this repo are sanitised exports, not raw ones. Removed:
-
-- the Telegram **chat ID** of the private group → `YOUR_TELEGRAM_CHAT_ID`, and the channel name → `@YOUR_PUBLIC_CHANNEL`
-- the Make **connection ID** and its label (`parameters.__IMTCONN__` and `metadata.restore.parameters.__IMTCONN__`)
-- cached **API response samples** under `metadata.designer.samples` — these held request timestamps and CDN trace headers
-- account identifiers: team ID, scenario IDs, creator name and e-mail
-- the **departure airport** in the flight-search links → `YOUR_AIRPORT`, so the blueprint works from any departure point
-
-**No tokens were ever in these files.** Make stores bot tokens and OAuth credentials in the Connection object, which is never part of a blueprint export. Neither scenario sets or reads cookies (`shareCookies: false` throughout).
-
-If you export your own blueprints, check the same four places before committing.
-
----
-
-## Licence
-
-MIT — see `LICENSE`.
+<sub>Data sources: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0) · <a href="https://www.swpc.noaa.gov/">NOAA Space Weather Prediction Center</a> (public domain).<br>Built by <b>Dariia Sichynska</b>. The Make history screenshots above show the scenario edits under her account.</sub>

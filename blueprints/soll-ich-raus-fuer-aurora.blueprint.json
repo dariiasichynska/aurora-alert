@@ -1,0 +1,180 @@
+{
+  "name": "Soll ich raus für Aurora?",
+  "flow": [
+    {
+      "id": 2,
+      "module": "http:MakeRequest",
+      "version": 4,
+      "parameters": {
+        "tlsType": "",
+        "authenticationType": "noAuth"
+      },
+      "mapper": {
+        "url": "https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json",
+        "method": "get",
+        "shareCookies": false,
+        "parseResponse": true,
+        "allowRedirects": true,
+        "stopOnHttpError": true,
+        "requestCompressedContent": true
+      },
+      "metadata": {
+        "designer": {
+          "x": -368,
+          "y": 4
+        }
+      }
+    },
+    {
+      "id": 7,
+      "module": "http:MakeRequest",
+      "version": 4,
+      "filter": {
+        "name": "Bz negative",
+        "conditions": [
+          [
+            {
+              "a": "{{parseNumber(2.data[1].bz_gsm)}}",
+              "b": "-3",
+              "o": "number:less"
+            },
+            {
+              "a": "{{parseNumber(2.data[1].bz_gsm)}}",
+              "b": "-100",
+              "o": "number:greater"
+            }
+          ]
+        ]
+      },
+      "parameters": {
+        "tlsType": "",
+        "authenticationType": "noAuth"
+      },
+      "mapper": {
+        "url": "https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json",
+        "method": "get",
+        "shareCookies": false,
+        "parseResponse": true,
+        "allowRedirects": true,
+        "stopOnHttpError": true,
+        "requestCompressedContent": true
+      },
+      "metadata": {
+        "designer": {
+          "x": -46,
+          "y": -3
+        }
+      }
+    },
+    {
+      "id": 6,
+      "module": "telegram:SendReplyMessage",
+      "version": 1,
+      "filter": {
+        "name": "Speed OK",
+        "conditions": [
+          [
+            {
+              "a": "{{parseNumber(7.data[1].proton_speed)}}",
+              "b": "450",
+              "o": "number:greater"
+            }
+          ]
+        ]
+      },
+      "parameters": {
+        "__IMTCONN__": null
+      },
+      "mapper": {
+        "chatId": "YOUR_PRIVATE_CHAT_ID",
+        "text": "🚨🌌 AURORA ALERT — GO OUTSIDE!\n\n⏱ It should start within 30–60 minutes.\nDress warmly, this takes more than five minutes.\n\n🧭 Look NORTH\nAway from street lights. At first you will only see a grey band above the horizon — that is it. The green colour appears when it gets strong, or on camera.\n\n━━━━━━━━━━━━━━\n\n🚪 Door to the atmosphere: {{if(parseNumber(2.data[1].bz_gsm) < -10; \"WIDE OPEN\"; \"open\")}}\n({{2.data[1].bz_gsm}} nT — the more negative, the better)\n\n💨 Solar wind: {{if(parseNumber(7.data[1].proton_speed) > 600; \"very fast\"; if(parseNumber(7.data[1].proton_speed) > 500; \"fast\"; \"normal\"))}}\n({{7.data[1].proton_speed}} km/s)\n\n🔋 Power reserve: {{if(parseNumber(2.data[1].bt) > 15; \"large — it may get even stronger, check again in half an hour\"; if(parseNumber(2.data[1].bt) > 8; \"medium\"; \"small — it won't get much stronger\"))}}\n({{2.data[1].bt}} nT)\n\n━━━━━━━━━━━━━━\n\n📷 Photo: 5–10 s exposure, ISO 1600, manual focus at ∞, tripod is a must.",
+        "parseMode": "",
+        "replyMarkup": "",
+        "messageThreadId": "",
+        "replyToMessageId": "",
+        "replyMarkupAssembleType": "reply_markup_enter"
+      },
+      "metadata": {
+        "designer": {
+          "x": 263,
+          "y": -7
+        }
+      }
+    },
+    {
+      "id": 8,
+      "module": "telegram:SendReplyMessage",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": null
+      },
+      "mapper": {
+        "chatId": "@YOUR_PUBLIC_CHANNEL",
+        "text": "(same template as module 6)",
+        "parseMode": "",
+        "replyMarkup": "",
+        "messageThreadId": "",
+        "replyToMessageId": "",
+        "replyMarkupAssembleType": "reply_markup_enter"
+      },
+      "metadata": {
+        "designer": {
+          "x": 563,
+          "y": -7
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "dlq": false,
+      "slots": null,
+      "dataloss": false,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "roundtrips": 1,
+      "sequential": false,
+      "confidential": false,
+      "freshVariables": false,
+      "autoCommitTriggerLast": true
+    }
+  },
+  "scheduling": {
+    "type": "indefinitely",
+    "interval": 1800,
+    "restrict": [
+      {
+        "days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "time": [
+          "20:00",
+          "23:59"
+        ]
+      },
+      {
+        "days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "time": [
+          "00:00",
+          "06:00"
+        ]
+      }
+    ]
+  }
+}
