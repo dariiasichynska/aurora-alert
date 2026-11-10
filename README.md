@@ -1,3 +1,7 @@
+
+
+https://github.com/user-attachments/assets/cd06d5f8-49d8-4858-8489-06d2e0737e6c
+
 <p align="center">
   <img src="assets/banner.svg" alt="Aurora Alert — space-weather and cloud data, no-code decision logic, Telegram" width="100%">
 </p>
