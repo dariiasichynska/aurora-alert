@@ -1,7 +1,3 @@
-
-
-https://github.com/user-attachments/assets/cd06d5f8-49d8-4858-8489-06d2e0737e6c
-
 <p align="center">
   <img src="assets/banner.svg" alt="Aurora Alert — space-weather and cloud data, no-code decision logic, Telegram" width="100%">
 </p>
@@ -24,7 +20,9 @@ https://github.com/user-attachments/assets/cd06d5f8-49d8-4858-8489-06d2e0737e6c
 
 No servers, no code to host: three public APIs, a handful of filters, and Telegram.
 
-<p align="center"><a href="assets/aurora-walkthrough.mp4"><img src="assets/aurora-walkthrough-cover.jpg" alt="Watch the 64-second walkthrough recorded in Make.com" width="100%"></a><br><sub>▶ <a href="assets/aurora-walkthrough.mp4"><b>Watch the 64-second walkthrough</b></a>, filmed on the real Make.com scenarios: canvas, filters, a real alert run and a real quiet run.</sub></p>
+https://github.com/user-attachments/assets/cd06d5f8-49d8-4858-8489-06d2e0737e6c
+
+<p align="center"><sub>64-second walkthrough filmed on the real Make.com scenarios: canvas, filters, a real alert run and a real quiet run. <a href="assets/aurora-walkthrough.mp4">Download MP4</a></sub></p>
 
 ---
 
@@ -115,7 +113,7 @@ On **21–22 October** the solar-wind conditions stayed "open" for hours, so the
 
 **Low clouds decide (trip planner).** Total cloud cover is misleading for aurora: thin high cirrus barely matters, while low stratus blocks everything. That is why the filter checks `cloud_cover_low` and the message shows total cover with low cover in brackets. The five sites act as an **OR**: one clear site is enough, because you can drive there.
 
-**Bz and solar-wind speed (live alarm).** Spacecraft at the L1 point measure the solar wind about 1.5 million km before it reaches Earth. That gives **roughly 30–60 minutes of warning**.
+**Bz and solar-wind speed (live alarm).** Spacecraft at the L1 point measure the solar wind about 1.5 million km before it reaches Earth. That gives **roughly 20–60 minutes of warning**, depending on wind speed.
 - **Bz < 0** (southward interplanetary magnetic field) couples with Earth's field and "opens the door". The more negative, the better. The lower bound −100 nT rejects fill values and sensor glitches.
 - **Speed > 450 km/s** means more energy is delivered. The message grades it as normal, fast (> 500) or very fast (> 600).
 - **Bt** (total field strength) is shown as "power reserve": a high Bt means Bz can swing even more negative.
@@ -124,6 +122,9 @@ On **21–22 October** the solar-wind conditions stayed "open" for hours, so the
 </details>
 
 ## Engineering notes
+
+Why each value is what it is (and which ones look like mistakes but are not) is documented in **[docs/architecture.md](docs/architecture.md)**.
+
 
 - **Filter-first ordering = cost control.** In Make, every executed module costs an operation. Putting the cheapest, most-often-failing check first (clouds, or Bz) means **72 % of trip-planner evenings stop after 1–2 operations**. Telegram only runs on the 28 % of evenings that matter.
 - **OR filter across sites.** The "Clouds low" filter has five OR-groups, one per site. Any single clear site passes.
@@ -137,7 +138,7 @@ On **21–22 October** the solar-wind conditions stayed "open" for hours, so the
 ## Roadmap
 
 - [ ] **Cooldown / de-duplication** for the live alarm. Store the last alert time in a Make **Data Store** and skip new alerts for 90 min (the 21-alerts-in-2-nights problem above).
-- [ ] **Location-aware thresholds.** Berlin (~52.5° N) typically needs Kp 6–7 for a visible aurora. Bz < −3 nT at 450 km/s is a good Lapland trigger but optimistic for Berlin. Option: add a Kp-nowcast or OVATION check for mid-latitudes.
+- [ ] **Mid-latitude mode.** The live thresholds are tuned for sites under the auroral oval (see [design notes](docs/architecture.md)). Watching from Berlin (~52.5° N) typically needs Kp 6–7, so a second profile with Bz ≤ −5 nT plus a Kp-nowcast check would cut false alarms there.
 - [ ] **Local cloud check** for the live alarm (Open-Meteo for the observer's position) before sending "go outside".
 - [ ] **Error route** on the HTTP modules (`Resume`/`Ignore` + a quiet Telegram note) for occasional NOAA `503`s.
 - [ ] Pick the Kp slot by `time_tag` (e.g. `map()` + `get()`) instead of the fixed position `[80]`, so a change in NOAA's file layout cannot shift the night silently.
@@ -146,6 +147,7 @@ On **21–22 October** the solar-wind conditions stayed "open" for hours, so the
 ## Repository layout
 
 ```
+docs/         design notes: why every threshold and index is what it is
 assets/       banner, architecture diagram, charts, message layouts (SVG), walkthrough video (MP4 + cover), screenshots/ from Make
 blueprints/   sanitized Make blueprints, importable via Scenario → ⋯ → Import Blueprint
 data/         execution logs exported from Make (CSV)
